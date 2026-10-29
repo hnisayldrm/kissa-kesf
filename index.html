@@ -73,7 +73,8 @@
         function initLiveLeaderboardSync() {
             try {
                 const clientId = "client_" + getDeviceId() + "_" + Math.random().toString(36).substring(2, 5);
-                mqttClient = new Paho.MQTT.Client("broker.hivemq.com", 8000, clientId);
+                // Secure WebSocket (WSS - Port 8884) kullanılarak SSL/HTTPS engeli tamamen aşıldı
+                mqttClient = new Paho.MQTT.Client("broker.hivemq.com", 8884, clientId);
 
                 mqttClient.onConnectionLost = function (responseObject) {
                     setTimeout(initLiveLeaderboardSync, 3000);
@@ -88,7 +89,6 @@
                                 window.renderLeaderboardTable();
                             }
                         } else if (data.type === 'REQ_SCORES' && window.globalScoresList.length > 0) {
-                            // Diğer cihazlar istek attığında elindeki listeyi yayınla
                             publishMQTTMessage({
                                 type: 'SCORE_SYNC_ALL',
                                 scores: window.globalScoresList.slice(0, 50)
@@ -111,13 +111,12 @@
                 mqttClient.connect({
                     onSuccess: function () {
                         mqttClient.subscribe(MQTT_TOPIC);
-                        // Bağlanınca mevcut skorları iste
                         publishMQTTMessage({ type: 'REQ_SCORES' });
                     },
                     onFailure: function () {
                         setTimeout(initLiveLeaderboardSync, 5000);
                     },
-                    useSSL: false
+                    useSSL: true // HTTPS sitelerde çalışması için WSS SSL aktif edildi
                 });
             } catch (e) {}
         }
